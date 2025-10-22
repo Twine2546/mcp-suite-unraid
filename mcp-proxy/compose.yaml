@@ -4,115 +4,153 @@ services:
     image: python:3.11-slim
     container_name: github-mcp-proxy
     restart: unless-stopped
-    network_mode: bridge
     working_dir: /app
+    volumes:
+      - /mnt/user/appdata/mcp-suite/github/root:/home/nobody
+      - /mnt/user/appdata/mcp-suite/github/npm-cache:/home/nobody/.npm
     environment:
       - GITHUB_PERSONAL_ACCESS_TOKEN=${GITHUB_PERSONAL_ACCESS_TOKEN}
       - DEBIAN_FRONTEND=noninteractive
+      - HOME=/home/nobody
+      - PATH=/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin
     command: >
       sh -c "
         dpkg --configure -a &&
-        apt-get update && 
+        apt-get update &&
         apt-get install -y --force-yes nodejs npm || true &&
         apt-get install -y -f &&
         pip install --no-cache-dir mcp-proxy &&
-        mcp-proxy --port 3006 --host 0.0.0.0 npx @modelcontextprotocol/server-github
+        find /home/nobody/.npm -mindepth 1 -delete 2>/dev/null || true &&
+        chown -R 99:100 /home/nobody /app &&
+        su -s /bin/sh nobody -c 'PATH=/usr/local/bin:/usr/bin:/bin HOME=/home/nobody mcp-proxy --port 3006 --host 0.0.0.0 npx @modelcontextprotocol/server-github'
       "
     ports:
       - "3006:3006"
+    networks:
+      - mcp_network
 
   # OpenAI MCP via Proxy (Python custom server)
   openai-mcp-proxy:
     image: python:3.11-slim
     container_name: openai-mcp-proxy
     restart: unless-stopped
-    network_mode: bridge
     working_dir: /app
     volumes:
       - /mnt/user/appdata/mcp-suite/openai-python:/mcp
+      - /mnt/user/appdata/mcp-suite/openai/root:/home/nobody
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - HOME=/home/nobody
     command: >
       sh -c "
         pip install --no-cache-dir mcp-proxy openai mcp &&
-        mcp-proxy --port 3001 --host 0.0.0.0 python3 /mcp/openai-custom-env/openai_mcp_server.py
+        mkdir -p /home/nobody/.local &&
+        chown -R 99:100 /home/nobody /mcp /app &&
+        su -s /bin/sh nobody -c 'HOME=/home/nobody mcp-proxy --port 3001 --host 0.0.0.0 python3 /mcp/openai-custom-env/openai_mcp_server.py'
       "
     ports:
       - "3001:3001"
+    networks:
+      - mcp_network
 
   # Gmail MCP via Proxy
   gmail-mcp-proxy:
     image: python:3.11-slim
     container_name: gmail-mcp-proxy
     restart: unless-stopped
-    network_mode: bridge
     working_dir: /app
     volumes:
       - /mnt/user/appdata/mcp-suite/gmail/credentials:/credentials
+      - /mnt/user/appdata/mcp-suite/gmail/root:/home/nobody
+      - /mnt/user/appdata/mcp-suite/gmail/npm-cache:/home/nobody/.npm
     environment:
       - GOOGLE_APPLICATION_CREDENTIALS=/credentials/gcp-oauth.keys.json
       - DEBIAN_FRONTEND=noninteractive
+      - HOME=/home/nobody
+      - PATH=/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin
     command: >
       sh -c "
         dpkg --configure -a &&
-        apt-get update && 
+        apt-get update &&
         apt-get install -y --force-yes nodejs npm || true &&
         apt-get install -y -f &&
-        mkdir -p /root/.gmail-mcp &&
+        find /home/nobody/.npm -mindepth 1 -delete 2>/dev/null || true &&
+        mkdir -p /home/nobody/.gmail-mcp &&
         cp /credentials/gcp-oauth.keys.json /app/gcp-oauth.keys.json &&
-        cp /credentials/gcp-oauth.keys.json /root/.gmail-mcp/gcp-oauth.keys.json &&
+        cp /credentials/gcp-oauth.keys.json /home/nobody/.gmail-mcp/gcp-oauth.keys.json &&
         pip install --no-cache-dir mcp-proxy &&
-        mcp-proxy --port 3102 --host 0.0.0.0 npx @gongrzhe/server-gmail-autoauth-mcp
+        chown -R 99:100 /home/nobody /app /credentials &&
+        su -s /bin/sh nobody -c 'PATH=/usr/local/bin:/usr/bin:/bin HOME=/home/nobody mcp-proxy --port 3102 --host 0.0.0.0 npx @gongrzhe/server-gmail-autoauth-mcp'
       "
     ports:
-      - "3102:3102"
-      - "3003:3003"
+      - "3102:3102"  # MCP endpoint
+      - "3003:3000"  # OAuth auth server (external 3003 → internal 3000)
+    networks:
+      - mcp_network
 
   # Google Drive MCP via Proxy
   gdrive-mcp-proxy:
     image: python:3.11-slim
     container_name: gdrive-mcp-proxy
     restart: unless-stopped
-    network_mode: bridge
     working_dir: /app
     volumes:
       - /mnt/user/appdata/mcp-suite/gdrive/credentials:/credentials
+      - /mnt/user/appdata/mcp-suite/gdrive/root:/home/nobody
+      - /mnt/user/appdata/mcp-suite/gdrive/npm-cache:/home/nobody/.npm
     environment:
       - GOOGLE_DRIVE_OAUTH_CREDENTIALS=/credentials/gcp-oauth.keys.json
       - DEBIAN_FRONTEND=noninteractive
+      - HOME=/home/nobody
+      - PATH=/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin
     command: >
       sh -c "
         dpkg --configure -a &&
-        apt-get update && 
+        apt-get update &&
         apt-get install -y --force-yes nodejs npm || true &&
         apt-get install -y -f &&
         cp /credentials/gcp-oauth.keys.json /app/gcp-oauth.keys.json &&
         pip install --no-cache-dir mcp-proxy &&
-        mcp-proxy --port 3004 --host 0.0.0.0 npx @piotr-agier/google-drive-mcp
+        find /home/nobody/.npm -mindepth 1 -delete 2>/dev/null || true &&
+        chown -R 99:100 /home/nobody /app /credentials &&
+        su -s /bin/sh nobody -c 'PATH=/usr/local/bin:/usr/bin:/bin HOME=/home/nobody mcp-proxy --port 3004 --host 0.0.0.0 npx @piotr-agier/google-drive-mcp'
       "
     ports:
-      - "3004:3004"
-      - "3005:3005"
+      - "3004:3004"  # MCP endpoint
+      - "3005:3000"  # OAuth auth server (external 3005 → internal 3000)
+    networks:
+      - mcp_network
 
   # Memory MCP via Proxy
   memory-mcp-proxy:
     image: python:3.11-slim
     container_name: memory-mcp-proxy
     restart: unless-stopped
-    network_mode: bridge
     working_dir: /app
     volumes:
       - /mnt/user/appdata/mcp-suite/memory/data:/data
+      - /mnt/user/appdata/mcp-suite/memory/root:/home/nobody
+      - /mnt/user/appdata/mcp-suite/memory/npm-cache:/home/nobody/.npm
     environment:
       - DEBIAN_FRONTEND=noninteractive
+      - HOME=/home/nobody
+      - PATH=/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin
     command: >
       sh -c "
         dpkg --configure -a &&
-        apt-get update && 
+        apt-get update &&
         apt-get install -y --force-yes nodejs npm || true &&
         apt-get install -y -f &&
         pip install --no-cache-dir mcp-proxy &&
-        mcp-proxy --port 3107 --host 0.0.0.0 npx @modelcontextprotocol/server-memory
+        find /home/nobody/.npm -mindepth 1 -delete 2>/dev/null || true &&
+        chown -R 99:100 /home/nobody /data /app &&
+        su -s /bin/sh nobody -c 'PATH=/usr/local/bin:/usr/bin:/bin HOME=/home/nobody mcp-proxy --port 3107 --host 0.0.0.0 npx @modelcontextprotocol/server-memory'
       "
     ports:
       - "3107:3107"
+    networks:
+      - mcp_network
+
+networks:
+  mcp_network:
+    external: true
