@@ -1,0 +1,90 @@
+services:
+  dev-container:
+    image: python:3.11-slim
+    container_name: dev-container
+    restart: unless-stopped
+    network_mode: bridge
+    working_dir: /workspace
+    volumes:
+      # Workspace and projects
+      - /mnt/user/appdata/dev-container/workspace:/workspace
+      - /mnt/user/appdata/dev-container/config:/root/.config
+      
+      # Docker socket for building containers
+      - /var/run/docker.sock:/var/run/docker.sock
+      
+      # SSH keys (optional)
+      - /mnt/user/appdata/dev-container/ssh:/root/.ssh
+      
+    environment:
+      # MCP server URLs
+      - MCP_GITHUB_URL=http://YOUR-SERVER-IP:3006
+      - MCP_OPENAI_URL=http://YOUR-SERVER-IP:3001
+      - MCP_GMAIL_URL=http://YOUR-SERVER-IP:3102
+      - MCP_GDRIVE_URL=http://YOUR-SERVER-IP:3004
+      - MCP_MEMORY_URL=http://YOUR-SERVER-IP:3107
+      - MCP_PLAYWRIGHT_URL=http://YOUR-SERVER-IP:3008
+      
+    ports:
+      - "8888:8888"  # Jupyter
+      - "8000:8000"  # General web server
+      
+    # Install all development tools
+    command: >
+      sh -c "
+        apt-get update &&
+        apt-get install -y \
+          git \
+          curl \
+          wget \
+          vim \
+          nano \
+          build-essential \
+          gcc \
+          g++ \
+          make \
+          cmake \
+          nodejs \
+          npm \
+          docker.io \
+          docker-compose \
+          openssh-client \
+          ca-certificates \
+          gnupg \
+          lsb-release \
+          sudo &&
+        pip install --no-cache-dir \
+          jupyter \
+          jupyterlab \
+          ipython \
+          pandas \
+          numpy \
+          scipy \
+          matplotlib \
+          seaborn \
+          scikit-learn \
+          requests \
+          httpx \
+          fastapi \
+          uvicorn \
+          flask \
+          django \
+          sqlalchemy \
+          pytest \
+          black \
+          flake8 \
+          mypy \
+          poetry \
+          pipenv &&
+        echo 'Development container ready!' &&
+        echo 'MCP Servers available at:' &&
+        echo '  GitHub:    $$MCP_GITHUB_URL' &&
+        echo '  OpenAI:    $$MCP_OPENAI_URL' &&
+        echo '  Gmail:     $$MCP_GMAIL_URL' &&
+        echo '  Drive:     $$MCP_GDRIVE_URL' &&
+        echo '  Memory:    $$MCP_MEMORY_URL' &&
+        echo '  Playwright: $$MCP_PLAYWRIGHT_URL' &&
+        echo '' &&
+        echo 'Starting Jupyter Lab on port 8888...' &&
+        jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root --NotebookApp.token='' --NotebookApp.password=''
+      "
