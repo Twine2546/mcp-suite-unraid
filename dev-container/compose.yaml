@@ -64,7 +64,7 @@ services:
         pip3 install --break-system-packages --ignore-installed poetry pipenv virtualenv
 
         # Install Claude Code CLI globally
-        npm install -g @anthropic/claude-code
+        npm install -g claude-code
 
         # Install additional Node.js tools
         npm install -g typescript ts-node prettier eslint yarn pnpm
@@ -107,7 +107,7 @@ services:
         echo ""
         echo "🤖 To use Claude Code:"
         echo "  1. Open terminal in VSCode"
-        echo "  2. Run: claude --dangerously-skip-permissions"
+        echo "  2. Run: claude"
         echo "========================================"
         echo ""
 
