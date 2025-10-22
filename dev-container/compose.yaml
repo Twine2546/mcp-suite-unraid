@@ -37,45 +37,62 @@ services:
       - -c
       - |
         set -e
-        echo "Installing development tools..."
 
-        # Update and install all packages
-        apt-get update
-        apt-get install -y bash-completion git git-lfs curl wget vim nano
-        apt-get install -y build-essential gcc g++ gdb make cmake automake autoconf pkg-config libtool
-        apt-get install -y python3 python3-pip python3-dev python3-venv
-        apt-get install -y nodejs npm
-        apt-get install -y docker.io docker-compose
-        apt-get install -y openssh-client ca-certificates gnupg lsb-release
-        apt-get install -y software-properties-common apt-transport-https
-        apt-get install -y jq zip unzip tar gzip bzip2 xz-utils tree htop sudo
+        # Check if first-time setup has been completed
+        if [ ! -f /config/.setup-complete ]; then
+          echo "========================================"
+          echo "🔧 First-time setup detected"
+          echo "Installing development tools..."
+          echo "This may take 5-10 minutes"
+          echo "========================================"
+          echo ""
 
-        # Install yq separately
-        wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
-        chmod +x /usr/local/bin/yq
+          # Update and install all packages
+          apt-get update
+          apt-get install -y bash-completion git git-lfs curl wget vim nano
+          apt-get install -y build-essential gcc g++ gdb make cmake automake autoconf pkg-config libtool
+          apt-get install -y python3 python3-pip python3-dev python3-venv
+          apt-get install -y nodejs npm
+          apt-get install -y docker.io docker-compose
+          apt-get install -y openssh-client ca-certificates gnupg lsb-release
+          apt-get install -y software-properties-common apt-transport-https
+          apt-get install -y jq zip unzip tar gzip bzip2 xz-utils tree htop sudo
 
-        # Install Python packages (ignore system packages to avoid conflicts)
-        pip3 install --break-system-packages --ignore-installed jupyter jupyterlab ipython
-        pip3 install --break-system-packages --ignore-installed pandas numpy scipy matplotlib seaborn scikit-learn
-        pip3 install --break-system-packages --ignore-installed requests httpx aiohttp
-        pip3 install --break-system-packages --ignore-installed fastapi uvicorn flask django
-        pip3 install --break-system-packages --ignore-installed sqlalchemy psycopg2-binary
-        pip3 install --break-system-packages --ignore-installed pytest pytest-cov black flake8 mypy pylint
-        pip3 install --break-system-packages --ignore-installed poetry pipenv virtualenv
+          # Install yq separately
+          wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          chmod +x /usr/local/bin/yq
 
-        # Install Claude Code CLI globally
-        npm install -g claude-code
+          # Install Python packages (ignore system packages to avoid conflicts)
+          pip3 install --break-system-packages --ignore-installed jupyter jupyterlab ipython
+          pip3 install --break-system-packages --ignore-installed pandas numpy scipy matplotlib seaborn scikit-learn
+          pip3 install --break-system-packages --ignore-installed requests httpx aiohttp
+          pip3 install --break-system-packages --ignore-installed fastapi uvicorn flask django
+          pip3 install --break-system-packages --ignore-installed sqlalchemy psycopg2-binary
+          pip3 install --break-system-packages --ignore-installed pytest pytest-cov black flake8 mypy pylint
+          pip3 install --break-system-packages --ignore-installed poetry pipenv virtualenv
 
-        # Install additional Node.js tools
-        npm install -g typescript ts-node prettier eslint yarn pnpm
+          # Install Claude Code CLI globally
+          npm install -g claude-code
 
-        # Fix docker group (may already exist)
-        groupmod -g 999 docker 2>/dev/null || groupadd -g 999 docker || true
-        usermod -aG docker abc 2>/dev/null || true
+          # Install additional Node.js tools
+          npm install -g typescript ts-node prettier eslint yarn pnpm
 
-        # Set up bash completion
-        echo 'if [ -f /etc/bash_completion ]; then . /etc/bash_completion; fi' >> /config/.bashrc
-        echo 'alias ll="ls -lah"' >> /config/.bashrc
+          # Fix docker group (may already exist)
+          groupmod -g 999 docker 2>/dev/null || groupadd -g 999 docker || true
+          usermod -aG docker abc 2>/dev/null || true
+
+          # Set up bash completion
+          echo 'if [ -f /etc/bash_completion ]; then . /etc/bash_completion; fi' >> /config/.bashrc
+          echo 'alias ll="ls -lah"' >> /config/.bashrc
+
+          # Mark setup as complete
+          touch /config/.setup-complete
+          echo ""
+          echo "✅ First-time setup complete!"
+        else
+          echo "⏩ Skipping setup - already configured"
+          echo "   (Remove /config/.setup-complete to reinstall)"
+        fi
 
         echo ""
         echo "========================================"
