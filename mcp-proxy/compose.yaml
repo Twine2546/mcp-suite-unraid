@@ -20,7 +20,7 @@ services:
         apt-get install -y --force-yes nodejs npm || true &&
         apt-get install -y -f &&
         pip install --no-cache-dir mcp-proxy &&
-        find /home/nobody/.npm -mindepth 1 -delete 2>/dev/null || true &&
+        mkdir -p /home/nobody/.npm &&
         chown -R 99:100 /home/nobody /app &&
         su -s /bin/sh nobody -c 'PATH=/usr/local/bin:/usr/bin:/bin HOME=/home/nobody mcp-proxy --port 3006 --host 0.0.0.0 npx @modelcontextprotocol/server-github'
       "
@@ -74,12 +74,11 @@ services:
         apt-get update &&
         apt-get install -y --force-yes nodejs npm || true &&
         apt-get install -y -f &&
-        find /home/nobody/.npm -mindepth 1 -delete 2>/dev/null || true &&
-        mkdir -p /home/nobody/.gmail-mcp &&
+        mkdir -p /home/nobody/.gmail-mcp /home/nobody/.npm &&
         cp /credentials/gcp-oauth.keys.json /app/gcp-oauth.keys.json &&
         cp /credentials/gcp-oauth.keys.json /home/nobody/.gmail-mcp/gcp-oauth.keys.json &&
         pip install --no-cache-dir mcp-proxy &&
-        chown -R 99:100 /home/nobody /app /credentials &&
+        chown -R 99:100 /home/nobody /app &&
         su -s /bin/sh nobody -c 'PATH=/usr/local/bin:/usr/bin:/bin HOME=/home/nobody mcp-proxy --port 3102 --host 0.0.0.0 npx @gongrzhe/server-gmail-autoauth-mcp'
       "
     ports:
@@ -109,10 +108,10 @@ services:
         apt-get update &&
         apt-get install -y --force-yes nodejs npm || true &&
         apt-get install -y -f &&
+        mkdir -p /home/nobody/.npm &&
         cp /credentials/gcp-oauth.keys.json /app/gcp-oauth.keys.json &&
         pip install --no-cache-dir mcp-proxy &&
-        find /home/nobody/.npm -mindepth 1 -delete 2>/dev/null || true &&
-        chown -R 99:100 /home/nobody /app /credentials &&
+        chown -R 99:100 /home/nobody /app &&
         su -s /bin/sh nobody -c 'PATH=/usr/local/bin:/usr/bin:/bin HOME=/home/nobody mcp-proxy --port 3004 --host 0.0.0.0 npx @piotr-agier/google-drive-mcp'
       "
     ports:
@@ -142,7 +141,7 @@ services:
         apt-get install -y --force-yes nodejs npm || true &&
         apt-get install -y -f &&
         pip install --no-cache-dir mcp-proxy &&
-        find /home/nobody/.npm -mindepth 1 -delete 2>/dev/null || true &&
+        mkdir -p /home/nobody/.npm &&
         chown -R 99:100 /home/nobody /data /app &&
         su -s /bin/sh nobody -c 'PATH=/usr/local/bin:/usr/bin:/bin HOME=/home/nobody mcp-proxy --port 3107 --host 0.0.0.0 npx @modelcontextprotocol/server-memory'
       "
