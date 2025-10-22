@@ -10,13 +10,14 @@ services:
       - /mnt/user/appdata/mcp-suite/github/npm-cache:/root/.npm
     environment:
       - GITHUB_PERSONAL_ACCESS_TOKEN=${GITHUB_PERSONAL_ACCESS_TOKEN}
-      - DEBIAN_FRONTEND=noninteractive
     command: >
       sh -c "
-        dpkg --configure -a &&
-        apt-get update &&
-        apt-get install -y nodejs npm &&
-        pip install --no-cache-dir mcp-proxy &&
+        if [ ! -f /root/.setup_done ]; then
+          apt-get update &&
+          apt-get install -y nodejs npm &&
+          pip install --no-cache-dir mcp-proxy &&
+          touch /root/.setup_done;
+        fi &&
         mcp-proxy --port 3006 --host 0.0.0.0 npx @modelcontextprotocol/server-github
       "
     ports:
@@ -37,7 +38,10 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
     command: >
       sh -c "
-        pip install --no-cache-dir mcp-proxy openai mcp &&
+        if [ ! -f /root/.setup_done ]; then
+          pip install --no-cache-dir mcp-proxy openai mcp &&
+          touch /root/.setup_done;
+        fi &&
         mcp-proxy --port 3001 --host 0.0.0.0 python3 /mcp/openai-custom-env/openai_mcp_server.py
       "
     ports:
@@ -57,16 +61,17 @@ services:
       - /mnt/user/appdata/mcp-suite/gmail/npm-cache:/root/.npm
     environment:
       - GOOGLE_APPLICATION_CREDENTIALS=/credentials/gcp-oauth.keys.json
-      - DEBIAN_FRONTEND=noninteractive
     command: >
       sh -c "
-        dpkg --configure -a &&
-        apt-get update &&
-        apt-get install -y nodejs npm &&
+        if [ ! -f /root/.setup_done ]; then
+          apt-get update &&
+          apt-get install -y nodejs npm &&
+          pip install --no-cache-dir mcp-proxy &&
+          touch /root/.setup_done;
+        fi &&
         mkdir -p /root/.gmail-mcp &&
         cp /credentials/gcp-oauth.keys.json /app/gcp-oauth.keys.json &&
         cp /credentials/gcp-oauth.keys.json /root/.gmail-mcp/gcp-oauth.keys.json &&
-        pip install --no-cache-dir mcp-proxy &&
         mcp-proxy --port 3102 --host 0.0.0.0 npx @gongrzhe/server-gmail-autoauth-mcp
       "
     ports:
@@ -87,14 +92,15 @@ services:
       - /mnt/user/appdata/mcp-suite/gdrive/npm-cache:/root/.npm
     environment:
       - GOOGLE_DRIVE_OAUTH_CREDENTIALS=/credentials/gcp-oauth.keys.json
-      - DEBIAN_FRONTEND=noninteractive
     command: >
       sh -c "
-        dpkg --configure -a &&
-        apt-get update &&
-        apt-get install -y nodejs npm &&
+        if [ ! -f /root/.setup_done ]; then
+          apt-get update &&
+          apt-get install -y nodejs npm &&
+          pip install --no-cache-dir mcp-proxy &&
+          touch /root/.setup_done;
+        fi &&
         cp /credentials/gcp-oauth.keys.json /app/gcp-oauth.keys.json &&
-        pip install --no-cache-dir mcp-proxy &&
         mcp-proxy --port 3004 --host 0.0.0.0 npx @piotr-agier/google-drive-mcp
       "
     ports:
@@ -113,14 +119,14 @@ services:
       - /mnt/user/appdata/mcp-suite/memory/data:/data
       - /mnt/user/appdata/mcp-suite/memory/root:/root
       - /mnt/user/appdata/mcp-suite/memory/npm-cache:/root/.npm
-    environment:
-      - DEBIAN_FRONTEND=noninteractive
     command: >
       sh -c "
-        dpkg --configure -a &&
-        apt-get update &&
-        apt-get install -y nodejs npm &&
-        pip install --no-cache-dir mcp-proxy &&
+        if [ ! -f /root/.setup_done ]; then
+          apt-get update &&
+          apt-get install -y nodejs npm &&
+          pip install --no-cache-dir mcp-proxy &&
+          touch /root/.setup_done;
+        fi &&
         mcp-proxy --port 3107 --host 0.0.0.0 npx @modelcontextprotocol/server-memory
       "
     ports:
