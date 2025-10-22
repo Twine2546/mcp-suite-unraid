@@ -1,17 +1,30 @@
 services:
+  # Playwright MCP via Proxy (with headless Chrome)
   playwright-mcp:
-    image: mcr.microsoft.com/playwright:v1.49.1-noble
+    image: mcr.microsoft.com/playwright:v1.48.0-jammy
     container_name: playwright-mcp
     restart: unless-stopped
-    network_mode: bridge
     working_dir: /app
+    volumes:
+      - /mnt/user/appdata/mcp-suite/playwright/data:/data
+      - /mnt/user/appdata/mcp-suite/playwright/root:/home/pwuser
+    environment:
+      - DEBIAN_FRONTEND=noninteractive
+      - HOME=/home/pwuser
     command: >
       sh -c "
-        npm install -g @playwright/mcp &&
-        npx @playwright/mcp --port 3008
+        apt-get update &&
+        apt-get install -y python3-pip &&
+        pip3 install --no-cache-dir mcp-proxy &&
+        chown -R pwuser:pwuser /home/pwuser /data &&
+        su -s /bin/sh pwuser -c 'export PATH=/home/pwuser/.local/bin:/ms/playwright/node_modules/.bin:/usr/local/bin:/usr/bin:/bin HOME=/home/pwuser && mcp-proxy --port 3008 --host 0.0.0.0 -- npx -y @executeautomation/playwright-mcp-server'
       "
     ports:
       - "3008:3008"
-    shm_size: 2gb
-    environment:
-      - DISPLAY=:99
+    networks:
+      - mcp_network
+    shm_size: '2gb'
+
+networks:
+  mcp_network:
+    external: true
