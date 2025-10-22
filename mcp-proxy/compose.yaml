@@ -1,0 +1,118 @@
+services:
+  # GitHub MCP via Proxy
+  github-mcp-proxy:
+    image: python:3.11-slim
+    container_name: github-mcp-proxy
+    restart: unless-stopped
+    network_mode: bridge
+    working_dir: /app
+    environment:
+      - GITHUB_PERSONAL_ACCESS_TOKEN=${GITHUB_PERSONAL_ACCESS_TOKEN}
+      - DEBIAN_FRONTEND=noninteractive
+    command: >
+      sh -c "
+        dpkg --configure -a &&
+        apt-get update && 
+        apt-get install -y --force-yes nodejs npm || true &&
+        apt-get install -y -f &&
+        pip install --no-cache-dir mcp-proxy &&
+        mcp-proxy --port 3006 --host 0.0.0.0 npx @modelcontextprotocol/server-github
+      "
+    ports:
+      - "3006:3006"
+
+  # OpenAI MCP via Proxy (Python custom server)
+  openai-mcp-proxy:
+    image: python:3.11-slim
+    container_name: openai-mcp-proxy
+    restart: unless-stopped
+    network_mode: bridge
+    working_dir: /app
+    volumes:
+      - /mnt/user/appdata/mcp-suite/openai-python:/mcp
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    command: >
+      sh -c "
+        pip install --no-cache-dir mcp-proxy openai mcp &&
+        mcp-proxy --port 3001 --host 0.0.0.0 python3 /mcp/openai-custom-env/openai_mcp_server.py
+      "
+    ports:
+      - "3001:3001"
+
+  # Gmail MCP via Proxy
+  gmail-mcp-proxy:
+    image: python:3.11-slim
+    container_name: gmail-mcp-proxy
+    restart: unless-stopped
+    network_mode: bridge
+    working_dir: /app
+    volumes:
+      - /mnt/user/appdata/mcp-suite/gmail/credentials:/credentials
+    environment:
+      - GOOGLE_APPLICATION_CREDENTIALS=/credentials/gcp-oauth.keys.json
+      - DEBIAN_FRONTEND=noninteractive
+    command: >
+      sh -c "
+        dpkg --configure -a &&
+        apt-get update && 
+        apt-get install -y --force-yes nodejs npm || true &&
+        apt-get install -y -f &&
+        mkdir -p /root/.gmail-mcp &&
+        cp /credentials/gcp-oauth.keys.json /app/gcp-oauth.keys.json &&
+        cp /credentials/gcp-oauth.keys.json /root/.gmail-mcp/gcp-oauth.keys.json &&
+        pip install --no-cache-dir mcp-proxy &&
+        mcp-proxy --port 3102 --host 0.0.0.0 npx @gongrzhe/server-gmail-autoauth-mcp
+      "
+    ports:
+      - "3102:3102"
+      - "3003:3003"
+
+  # Google Drive MCP via Proxy
+  gdrive-mcp-proxy:
+    image: python:3.11-slim
+    container_name: gdrive-mcp-proxy
+    restart: unless-stopped
+    network_mode: bridge
+    working_dir: /app
+    volumes:
+      - /mnt/user/appdata/mcp-suite/gdrive/credentials:/credentials
+    environment:
+      - GOOGLE_DRIVE_OAUTH_CREDENTIALS=/credentials/gcp-oauth.keys.json
+      - DEBIAN_FRONTEND=noninteractive
+    command: >
+      sh -c "
+        dpkg --configure -a &&
+        apt-get update && 
+        apt-get install -y --force-yes nodejs npm || true &&
+        apt-get install -y -f &&
+        cp /credentials/gcp-oauth.keys.json /app/gcp-oauth.keys.json &&
+        pip install --no-cache-dir mcp-proxy &&
+        mcp-proxy --port 3004 --host 0.0.0.0 npx @piotr-agier/google-drive-mcp
+      "
+    ports:
+      - "3004:3004"
+      - "3005:3005"
+
+  # Memory MCP via Proxy
+  memory-mcp-proxy:
+    image: python:3.11-slim
+    container_name: memory-mcp-proxy
+    restart: unless-stopped
+    network_mode: bridge
+    working_dir: /app
+    volumes:
+      - /mnt/user/appdata/mcp-suite/memory/data:/data
+    environment:
+      - DEBIAN_FRONTEND=noninteractive
+    command: >
+      sh -c "
+        dpkg --configure -a &&
+        apt-get update && 
+        apt-get install -y --force-yes nodejs npm || true &&
+        apt-get install -y -f &&
+        pip install --no-cache-dir mcp-proxy &&
+        mcp-proxy --port 3107 --host 0.0.0.0 npx @modelcontextprotocol/server-memory
+      "
+    ports:
+      - "3107:3107"
