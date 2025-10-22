@@ -1,90 +1,121 @@
 services:
-  dev-container:
-    image: python:3.11-slim
-    container_name: dev-container
-    restart: unless-stopped
-    network_mode: bridge
-    working_dir: /workspace
-    volumes:
-      # Workspace and projects
-      - /mnt/user/appdata/dev-container/workspace:/workspace
-      - /mnt/user/appdata/dev-container/config:/root/.config
-      
-      # Docker socket for building containers
-      - /var/run/docker.sock:/var/run/docker.sock
-      
-      # SSH keys (optional)
-      - /mnt/user/appdata/dev-container/ssh:/root/.ssh
-      
+  vscode-server:
+    image: lscr.io/linuxserver/code-server:latest
+    container_name: vscode-server
+    restart: "no"
+
     environment:
-      # MCP server URLs
-      - MCP_GITHUB_URL=http://YOUR-SERVER-IP:3006
-      - MCP_OPENAI_URL=http://YOUR-SERVER-IP:3001
-      - MCP_GMAIL_URL=http://YOUR-SERVER-IP:3102
-      - MCP_GDRIVE_URL=http://YOUR-SERVER-IP:3004
-      - MCP_MEMORY_URL=http://YOUR-SERVER-IP:3107
-      - MCP_PLAYWRIGHT_URL=http://YOUR-SERVER-IP:3008
-      
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - PASSWORD=${PASSWORD}
+      - SUDO_PASSWORD=${SUDO_PASSWORD}
+
+      # MCP server URLs (using container names)
+      - MCP_GITHUB_URL=${MCP_GITHUB_URL}
+      - MCP_OPENAI_URL=${MCP_OPENAI_URL}
+      - MCP_GMAIL_URL=${MCP_GMAIL_URL}
+      - MCP_GDRIVE_URL=${MCP_GDRIVE_URL}
+      - MCP_MEMORY_URL=${MCP_MEMORY_URL}
+      - MCP_PLAYWRIGHT_URL=${MCP_PLAYWRIGHT_URL}
+
+    volumes:
+      - /mnt/user/appdata/vscode-server/config:/config
+      - /mnt/user/appdata/vscode-server/workspace:/config/workspace
+      - /var/run/docker.sock:/var/run/docker.sock
+
     ports:
-      - "8888:8888"  # Jupyter
-      - "8000:8000"  # General web server
-      
-    # Install all development tools
-    command: >
-      sh -c "
-        apt-get update &&
-        apt-get install -y \
-          git \
-          curl \
-          wget \
-          vim \
-          nano \
-          build-essential \
-          gcc \
-          g++ \
-          make \
-          cmake \
-          nodejs \
-          npm \
-          docker.io \
-          docker-compose \
-          openssh-client \
-          ca-certificates \
-          gnupg \
-          lsb-release \
-          sudo &&
-        pip install --no-cache-dir \
-          jupyter \
-          jupyterlab \
-          ipython \
-          pandas \
-          numpy \
-          scipy \
-          matplotlib \
-          seaborn \
-          scikit-learn \
-          requests \
-          httpx \
-          fastapi \
-          uvicorn \
-          flask \
-          django \
-          sqlalchemy \
-          pytest \
-          black \
-          flake8 \
-          mypy \
-          poetry \
-          pipenv &&
-        echo 'Development container ready!' &&
-        echo 'MCP Servers available at:' &&
-        echo '  GitHub:    $$MCP_GITHUB_URL' &&
-        echo '  OpenAI:    $$MCP_OPENAI_URL' &&
-        echo '  Gmail:     $$MCP_GMAIL_URL' &&
-        echo '  Drive:     $$MCP_GDRIVE_URL' &&
-        echo '  Memory:    $$MCP_MEMORY_URL' &&
-        echo '  Playwright: $$MCP_PLAYWRIGHT_URL' &&
-        echo '' &&
-        echo 'Starting Jupyter Lab on port 8888...' &&
-        jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root --NotebookApp.token='' --NotebookApp.password=''
-      "
+      - "8090:8443"
+
+    networks:
+      - mcp_network
+      - my_internal_network
+
+    # Install development tools using a custom script
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        set -e
+        echo "Installing development tools..."
+
+        # Update and install all packages
+        apt-get update
+        apt-get install -y bash-completion git git-lfs curl wget vim nano
+        apt-get install -y build-essential gcc g++ gdb make cmake automake autoconf pkg-config libtool
+        apt-get install -y python3 python3-pip python3-dev python3-venv
+        apt-get install -y nodejs npm
+        apt-get install -y docker.io docker-compose
+        apt-get install -y openssh-client ca-certificates gnupg lsb-release
+        apt-get install -y software-properties-common apt-transport-https
+        apt-get install -y jq zip unzip tar gzip bzip2 xz-utils tree htop sudo
+
+        # Install yq separately
+        wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+        chmod +x /usr/local/bin/yq
+
+        # Install Python packages (ignore system packages to avoid conflicts)
+        pip3 install --break-system-packages --ignore-installed jupyter jupyterlab ipython
+        pip3 install --break-system-packages --ignore-installed pandas numpy scipy matplotlib seaborn scikit-learn
+        pip3 install --break-system-packages --ignore-installed requests httpx aiohttp
+        pip3 install --break-system-packages --ignore-installed fastapi uvicorn flask django
+        pip3 install --break-system-packages --ignore-installed sqlalchemy psycopg2-binary
+        pip3 install --break-system-packages --ignore-installed pytest pytest-cov black flake8 mypy pylint
+        pip3 install --break-system-packages --ignore-installed poetry pipenv virtualenv
+
+        # Install Claude Code CLI globally
+        npm install -g @anthropic/claude-code
+
+        # Install additional Node.js tools
+        npm install -g typescript ts-node prettier eslint yarn pnpm
+
+        # Fix docker group (may already exist)
+        groupmod -g 999 docker 2>/dev/null || groupadd -g 999 docker || true
+        usermod -aG docker abc 2>/dev/null || true
+
+        # Set up bash completion
+        echo 'if [ -f /etc/bash_completion ]; then . /etc/bash_completion; fi' >> /config/.bashrc
+        echo 'alias ll="ls -lah"' >> /config/.bashrc
+
+        echo ""
+        echo "========================================"
+        echo "✅ VSCode Server Ready!"
+        echo "========================================"
+        echo "Access: http://100.78.183.119:8090"
+        echo "User: abc (non-root, UID 1000)"
+        echo ""
+        echo "🌐 Networks:"
+        echo "  • mcp_network (MCP communication)"
+        echo "  • my_internal_network (custom)"
+        echo ""
+        echo "📦 Installed Tools:"
+        echo "  • bash, git, curl, wget, vim"
+        echo "  • gcc, g++, make, cmake"
+        echo "  • Python 3 + data science packages"
+        echo "  • Node.js + npm/yarn/pnpm"
+        echo "  • Docker + Docker Compose"
+        echo "  • Claude Code CLI"
+        echo "  • TypeScript, Prettier, ESLint"
+        echo ""
+        echo "🔌 MCP Servers (via container names):"
+        echo "  • GitHub:    http://github-mcp-proxy:3006/sse"
+        echo "  • OpenAI:    http://openai-mcp-proxy:3001/sse"
+        echo "  • Gmail:     http://gmail-mcp-proxy:3102/sse"
+        echo "  • Drive:     http://gdrive-mcp-proxy:3004/sse"
+        echo "  • Memory:    http://memory-mcp-proxy:3107/sse"
+        echo "  • Playwright: http://playwright-mcp:3008/sse"
+        echo ""
+        echo "🤖 To use Claude Code:"
+        echo "  1. Open terminal in VSCode"
+        echo "  2. Run: claude --dangerously-skip-permissions"
+        echo "========================================"
+        echo ""
+
+        # Start code-server
+        exec /init
+
+networks:
+  mcp_network:
+    external: true
+  my_internal_network:
+    external: true
