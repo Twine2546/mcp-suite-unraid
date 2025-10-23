@@ -23,7 +23,7 @@ services:
       - /mnt/user/appdata/vscode-server/config:/config
       - /mnt/user/appdata/vscode-server/workspace:/config/workspace
       - /var/run/docker.sock:/var/run/docker.sock
-      - ./install-claude.sh:/install-claude.sh:ro
+      - /mnt/user/appdata/dockge/stacks/vscode-server/install-claude.sh:/install-claude.sh:ro
 
     ports:
       - "8090:8443"
@@ -104,8 +104,8 @@ services:
         chown abc:abc /config/.claude.json 2>/dev/null || true
         chown abc:abc /config/.claude.json.backup 2>/dev/null || true
 
-        # Configure VSCode settings for clipboard
-        echo "🔧 Configuring clipboard settings..."
+        # Configure VSCode settings for performance
+        echo "🔧 Configuring VSCode settings..."
         mkdir -p /config/data/User
         cat > /config/data/User/settings.json << 'SETTINGS'
 {
@@ -117,9 +117,22 @@ services:
   "files.autoSave": "afterDelay",
   "files.autoSaveDelay": 1000,
   "security.workspace.trust.enabled": false,
+  
   "editor.copyWithSyntaxHighlighting": false,
   "terminal.integrated.copyOnSelection": true,
-  "terminal.integrated.rightClickBehavior": "default"
+  "terminal.integrated.rightClickBehavior": "default",
+  
+  "git.enabled": true,
+  "git.autorefresh": false,
+  "git.autofetch": false,
+  "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    "**/node_modules/**": true,
+    "**/.hg/store/**": true
+  },
+  "search.followSymlinks": false,
+  "extensions.autoUpdate": false
 }
 SETTINGS
         chown abc:abc /config/data/User/settings.json
@@ -128,7 +141,7 @@ SETTINGS
         echo "========================================"
         echo "✅ VSCode Server Ready!"
         echo "========================================"
-        echo "Access: http://<YOUR_SERVER_IP>:8090"
+        echo "Access via your server's IP on port 8090"
         echo "User: abc (non-root, UID 1000)"
         echo ""
         echo "🌐 Networks:"
@@ -156,12 +169,7 @@ SETTINGS
         echo "  1. Open terminal in VSCode"
         echo "  2. Run: claude"
         echo ""
-        echo "📋 Clipboard Access:"
-        echo "  • Terminal: Right-click to copy/paste"
-        echo "  • Terminal: Copy on selection enabled"
-        echo "  • Editor: Ctrl+C/V will show dialog"
-        echo "  • For native clipboard, enable in browser flags"
-        echo "  • See README for browser configuration"
+        echo "📋 Clipboard: Use browser flags for best experience (see docs)"
         echo "========================================"
         echo ""
 
