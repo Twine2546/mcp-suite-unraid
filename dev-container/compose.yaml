@@ -23,6 +23,7 @@ services:
       - /mnt/user/appdata/vscode-server/config:/config
       - /mnt/user/appdata/vscode-server/workspace:/config/workspace
       - /var/run/docker.sock:/var/run/docker.sock
+      - ./install-claude.sh:/install-claude.sh:ro
 
     ports:
       - "8090:8443"
@@ -71,8 +72,10 @@ services:
           pip3 install --break-system-packages --ignore-installed pytest pytest-cov black flake8 mypy pylint
           pip3 install --break-system-packages --ignore-installed poetry pipenv virtualenv
 
-          # Install Claude Code CLI globally
-          npm install -g claude-code
+          # Install Claude Code CLI using separate script
+          echo ""
+          echo "Running Claude Code installation script..."
+          bash /install-claude.sh
 
           # Install additional Node.js tools
           npm install -g typescript ts-node prettier eslint yarn pnpm
@@ -94,11 +97,38 @@ services:
           echo "   (Remove /config/.setup-complete to reinstall)"
         fi
 
+        # Fix permissions for Claude Code (run every time)
+        echo "🔧 Fixing Claude Code permissions..."
+        mkdir -p /config/.claude
+        chown -R abc:abc /config/.claude
+        chown abc:abc /config/.claude.json 2>/dev/null || true
+        chown abc:abc /config/.claude.json.backup 2>/dev/null || true
+
+        # Configure VSCode settings for clipboard
+        echo "🔧 Configuring clipboard settings..."
+        mkdir -p /config/data/User
+        cat > /config/data/User/settings.json << 'SETTINGS'
+{
+  "workbench.colorTheme": "Default Dark+",
+  "editor.fontSize": 14,
+  "terminal.integrated.fontSize": 14,
+  "editor.minimap.enabled": true,
+  "editor.wordWrap": "on",
+  "files.autoSave": "afterDelay",
+  "files.autoSaveDelay": 1000,
+  "security.workspace.trust.enabled": false,
+  "editor.copyWithSyntaxHighlighting": false,
+  "terminal.integrated.copyOnSelection": true,
+  "terminal.integrated.rightClickBehavior": "default"
+}
+SETTINGS
+        chown abc:abc /config/data/User/settings.json
+
         echo ""
         echo "========================================"
         echo "✅ VSCode Server Ready!"
         echo "========================================"
-        echo "Access: http://100.78.183.119:8090"
+        echo "Access: http://<YOUR_SERVER_IP>:8090"
         echo "User: abc (non-root, UID 1000)"
         echo ""
         echo "🌐 Networks:"
@@ -125,6 +155,13 @@ services:
         echo "🤖 To use Claude Code:"
         echo "  1. Open terminal in VSCode"
         echo "  2. Run: claude"
+        echo ""
+        echo "📋 Clipboard Access:"
+        echo "  • Terminal: Right-click to copy/paste"
+        echo "  • Terminal: Copy on selection enabled"
+        echo "  • Editor: Ctrl+C/V will show dialog"
+        echo "  • For native clipboard, enable in browser flags"
+        echo "  • See README for browser configuration"
         echo "========================================"
         echo ""
 
