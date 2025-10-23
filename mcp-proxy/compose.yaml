@@ -41,7 +41,7 @@ services:
           pip install --no-cache-dir mcp-proxy openai mcp &&
           touch /root/.setup_done;
         fi &&
-        mcp-proxy --port 3001 --host 0.0.0.0 python3 /mcp/openai-custom-env/openai_mcp_server.py
+        mcp-proxy --pass-environment --port 3001 --host 0.0.0.0 python3 /mcp/openai-custom-env/openai_mcp_server.py
       "
     ports:
       - 3001:3001
