@@ -15,24 +15,24 @@ services:
     command: >
       sh -c "
         if [ ! -f /root/.setup_done ]; then
-          echo '=== Installing system packages...' ;
+          echo === Installing system packages... ;
           apt-get update ;
           apt-get install -y nodejs npm ;
           apt-get install -y xvfb x11vnc fluxbox ;
           apt-get install -y novnc websockify procps ;
-          echo '=== Installing mcp-proxy...' ;
+          echo === Installing mcp-proxy... ;
           pip install --no-cache-dir mcp-proxy ;
-          echo '=== Installing Playwright browsers...' ;
+          echo === Installing Playwright browsers... ;
           npx -y playwright install chromium ;
           npx -y playwright install-deps chromium ;
-          echo '=== Creating symlinks...' ;
+          echo === Creating symlinks... ;
           cd /root/.cache/ms-playwright ;
           ln -sf chromium-1194 chromium-1179 ;
           ln -sf chromium_headless_shell-1194 chromium_headless_shell-1179 ;
           touch /root/.setup_done ;
-          echo '=== Setup complete!' ;
+          echo === Setup complete! ;
         fi ;
-        echo '=== Starting services...' ;
+        echo === Starting services... ;
         Xvfb :99 -screen 0 1920x1080x24 > /dev/null 2>&1 &
         sleep 2 ;
         x11vnc -display :99 -forever -nopw -shared -rfbport 5900 -bg ;
@@ -40,7 +40,7 @@ services:
         sleep 2 ;
         DISPLAY=:99 fluxbox > /dev/null 2>&1 &
         sleep 2 ;
-        echo '=== MCP server starting on port 3008...' ;
+        echo === MCP server starting on port 3008... ;
         mcp-proxy --port 3008 --host 0.0.0.0 -- npx -y @executeautomation/playwright-mcp-server
       "
     ports:
@@ -49,7 +49,7 @@ services:
       - "5900:5900"
     networks:
       - mcp_network
-    shm_size: '2gb'
+    shm_size: 2gb
 
 networks:
   mcp_network:
