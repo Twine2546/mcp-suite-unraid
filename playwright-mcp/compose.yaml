@@ -8,6 +8,7 @@ services:
     volumes:
       - /mnt/user/appdata/mcp-suite/playwright/data:/data
       - /mnt/user/appdata/mcp-suite/playwright/root:/home/pwuser
+      - /mnt/user/appdata/mcp-suite/playwright/browsers:/ms-playwright
     environment:
       - DEBIAN_FRONTEND=noninteractive
       - HOME=/home/pwuser
@@ -17,7 +18,7 @@ services:
         apt-get install -y python3-pip &&
         pip3 install --no-cache-dir mcp-proxy &&
         chown -R pwuser:pwuser /home/pwuser /data &&
-        su -s /bin/sh pwuser -c 'export PATH=/home/pwuser/.local/bin:/ms/playwright/node_modules/.bin:/usr/local/bin:/usr/bin:/bin HOME=/home/pwuser && npx playwright install chromium && mcp-proxy --port 3008 --host 0.0.0.0 -- npx -y @executeautomation/playwright-mcp-server'
+        su -s /bin/sh pwuser -c 'export PATH=/home/pwuser/.local/bin:/ms/playwright/node_modules/.bin:/usr/local/bin:/usr/bin:/bin HOME=/home/pwuser && npx playwright install chromium firefox webkit && mcp-proxy --port 3008 --host 0.0.0.0 -- npx -y @executeautomation/playwright-mcp-server'
       "
     ports:
       - "3008:3008"
