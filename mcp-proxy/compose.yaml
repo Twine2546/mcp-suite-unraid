@@ -21,10 +21,9 @@ services:
         mcp-proxy --port 3006 --host 0.0.0.0 npx @modelcontextprotocol/server-github
       "
     ports:
-      - "3006:3006"
+      - 3006:3006
     networks:
       - mcp_network
-
   # OpenAI MCP via Proxy (Python custom server)
   openai-mcp-proxy:
     image: python:3.11-slim
@@ -45,10 +44,9 @@ services:
         mcp-proxy --port 3001 --host 0.0.0.0 python3 /mcp/openai-custom-env/openai_mcp_server.py
       "
     ports:
-      - "3001:3001"
+      - 3001:3001
     networks:
       - mcp_network
-
   # Gmail MCP via Proxy
   gmail-mcp-proxy:
     image: python:3.11-slim
@@ -77,11 +75,10 @@ services:
         mcp-proxy --port 3102 --host 0.0.0.0 npx @gongrzhe/server-gmail-autoauth-mcp
       "
     ports:
-      - "3102:3102"
-      - "3003:3000"
+      - 3102:3102
+      - 3003:3000
     networks:
       - mcp_network
-
   # Google Drive MCP via Proxy
   gdrive-mcp-proxy:
     image: python:3.11-slim
@@ -93,9 +90,9 @@ services:
       - /mnt/user/appdata/mcp-suite/gdrive/root:/root
       - /mnt/user/appdata/mcp-suite/gdrive/npm-cache:/root/.npm
     environment:
-      - GOOGLE_DRIVE_OAUTH_CREDENTIALS=/credentials/gcp-oauth.keys.json
-      - GOOGLE_DRIVE_MCP_TOKEN_PATH=/root/tokens.json
-    command: >
+      - GOOGLE_DRIVE_OAUTH_CREDENTIALS=/app/gcp-oauth.keys.json
+      - GOOGLE_DRIVE_MCP_TOKEN_PATH=/root/.config/google-drive-mcp/tokens.json
+    command: |
       sh -c "
         if [ ! -f /root/.setup_done ]; then
           apt-get update &&
@@ -103,15 +100,18 @@ services:
           pip install --no-cache-dir mcp-proxy &&
           touch /root/.setup_done;
         fi &&
+        mkdir -p /root/.config/google-drive-mcp &&
         cp /credentials/gcp-oauth.keys.json /app/gcp-oauth.keys.json &&
+        cp /credentials/tokens.json /root/.config/google-drive-mcp/tokens.json &&
+        export GOOGLE_DRIVE_OAUTH_CREDENTIALS=/app/gcp-oauth.keys.json &&
+        export GOOGLE_DRIVE_MCP_TOKEN_PATH=/root/.config/google-drive-mcp/tokens.json &&
         mcp-proxy --port 3004 --host 0.0.0.0 npx @piotr-agier/google-drive-mcp
       "
     ports:
-      - "3004:3004"
-      - "3005:3000"
+      - 3004:3004
+      - 3005:3000
     networks:
       - mcp_network
-
   # Memory MCP via Proxy
   memory-mcp-proxy:
     image: python:3.11-slim
@@ -133,10 +133,9 @@ services:
         mcp-proxy --port 3107 --host 0.0.0.0 npx @modelcontextprotocol/server-memory
       "
     ports:
-      - "3107:3107"
+      - 3107:3107
     networks:
       - mcp_network
-
 networks:
   mcp_network:
     external: true
