@@ -1,24 +1,28 @@
 services:
-  # Playwright MCP via Proxy (with headless Chrome)
+  # Playwright MCP via Proxy
   playwright-mcp:
-    image: mcr.microsoft.com/playwright:v1.53.1-jammy
+    image: python:3.11-slim
     container_name: playwright-mcp
     restart: unless-stopped
     working_dir: /app
     volumes:
       - /mnt/user/appdata/mcp-suite/playwright/data:/data
-      - /mnt/user/appdata/mcp-suite/playwright/root:/home/pwuser
-      - /mnt/user/appdata/mcp-suite/playwright/browsers:/ms-playwright
+      - /mnt/user/appdata/mcp-suite/playwright/root:/root
+      - /mnt/user/appdata/mcp-suite/playwright/npm-cache:/root/.npm
     environment:
       - DEBIAN_FRONTEND=noninteractive
-      - HOME=/home/pwuser
     command: >
       sh -c "
-        apt-get update &&
-        apt-get install -y python3-pip &&
-        pip3 install --no-cache-dir mcp-proxy &&
-        chown -R pwuser:pwuser /home/pwuser /data &&
-        su -s /bin/sh pwuser -c 'export PATH=/home/pwuser/.local/bin:/ms/playwright/node_modules/.bin:/usr/local/bin:/usr/bin:/bin HOME=/home/pwuser && npx playwright install chromium firefox webkit && mcp-proxy --port 3008 --host 0.0.0.0 -- npx -y @executeautomation/playwright-mcp-server'
+        if [ ! -f /root/.setup_done ]; then
+          apt-get update &&
+          apt-get install -y nodejs npm &&
+          pip install --no-cache-dir mcp-proxy &&
+          echo 'Installing Playwright browsers and dependencies...' &&
+          npx -y playwright install chromium &&
+          npx -y playwright install-deps chromium &&
+          touch /root/.setup_done;
+        fi &&
+        mcp-proxy --port 3008 --host 0.0.0.0 -- npx -y @executeautomation/playwright-mcp-server
       "
     ports:
       - "3008:3008"
